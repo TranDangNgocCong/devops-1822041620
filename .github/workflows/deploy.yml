@@ -1,0 +1,51 @@
+name: Deploy website
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Lấy code về
+        uses: actions/checkout@v4
+
+      - name: Kiểm tra file và thẻ title
+        run: |
+          for f in index.html style.css script.js; do
+            if [ ! -f "$f" ]; then
+              echo "LOI: Thieu file $f"
+              exit 1
+            fi
+          done
+          if ! grep -q "<title>" index.html; then
+            echo "LOI: index.html thieu the <title>"
+            exit 1
+          fi
+          echo "Kiem tra thanh cong!"
+  deploy:
+    needs: check
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Lấy code về
+        uses: actions/checkout@v4
+
+      - name: Cấu hình Pages
+        uses: actions/configure-pages@v5
+
+      - name: Đóng gói website
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
